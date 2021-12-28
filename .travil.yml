@@ -1,0 +1,25 @@
+sudo: required
+language: generic
+services:
+  - docker 
+
+before_install:
+  - docker build -t christianlehre/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true christianlehre/react-test npm test
+
+after_success: 
+  # Build production images
+  - docker build -t christianlehre/multi-client ./client 
+  - docker build -t christianlehre/multi-nginx ./nginx 
+  - docker build -t christianlehre/multi-server ./server 
+  - docker build -t christianlehre/multi-worker ./worker
+  # Log in to the docker CLI - add encrypted environment variables in travis
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin 
+  # Push images to docker hub
+  - docker push christianlehre/multi-client 
+  - docker push christianlehre/multi-nginx
+  - docker push christianlehre/multi-server
+  - docker push christianlehre/multi-worker
+
